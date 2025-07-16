@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multiple Choice by Alejandro Zambra - CWI Course Reading</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .reader-header {
+            background: linear-gradient(135deg, #990000, #cc0000);
+            color: white;
+            padding: 30px;
+            text-align: center;
+            border-radius: 12px 12px 0 0;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        .reader-header h1 {
+            margin: 0;
+            font-size: 32px;
+            font-weight: 700;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .reader-header p {
+            margin: 10px 0 0 0;
+            font-size: 16px;
+            opacity: 0.9;
+        }
+        
+        .epub-viewer {
+            background: white;
+            min-height: 600px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+            border-radius: 0 0 12px 12px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .loading-container {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 600px;
+            color: #666;
+        }
+        
+        .loading-icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        
+        .loading-text {
+            font-size: 18px;
+            margin-bottom: 10px;
+        }
+        
+        .loading-subtext {
+            font-size: 14px;
+            color: #999;
+            text-align: center;
+            max-width: 400px;
+            line-height: 1.4;
+        }
+        
+        .error-container {
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 600px;
+            color: #c33;
+            text-align: center;
+            padding: 40px;
+        }
+        
+        .error-icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+        }
+        
+        .error-title {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+        
+        .error-message {
+            font-size: 16px;
+            line-height: 1.5;
+            margin-bottom: 20px;
+            max-width: 500px;
+        }
+        
+        .retry-button {
+            background: #990000;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s;
+        }
+        
+        .retry-button:hover {
+            background: #770000;
+        }
+        
+        .controls {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: none;
+            gap: 15px;
+            background: rgba(0,0,0,0.8);
+            padding: 15px 25px;
+            border-radius: 25px;
+            backdrop-filter: blur(10px);
+        }
+        
+        .control-btn {
+            background: #990000;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .control-btn:hover {
+            background: #cc0000;
+            transform: translateY(-2px);
+        }
+        
+        .control-btn:disabled {
+            background: #666;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .info-section {
+            background: white;
+            margin-top: 30px;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        .info-section h2 {
+            color: #990000;
+            margin-top: 0;
+            font-size: 24px;
+        }
+        
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        
+        .info-card {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid #990000;
+        }
+        
+        .info-card h3 {
+            margin-top: 0;
+            color: #990000;
+            font-size: 18px;
+        }
+        
+        .status-indicator {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+        
+        .status-loading {
+            background: #fff3cd;
+            color: #856404;
+        }
+        
+        .status-ready {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .status-error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            
+            .reader-header {
+                padding: 20px;
+            }
+            
+            .reader-header h1 {
+                font-size: 24px;
+            }
+            
+            .controls {
+                bottom: 10px;
+                padding: 10px 15px;
+            }
+            
+            .control-btn {
+                padding: 8px 15px;
+                font-size: 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="reader-header">
+            <h1>📚 Multiple Choice by Alejandro Zambra</h1>
+            <p>CWI Course Reading - MIT Interphase EDGE Summer 2025</p>
+            <span id="statusIndicator" class="status-indicator status-loading">Loading...</span>
+        </div>
+        
+        <div class="epub-viewer">
+            <div id="loadingContainer" class="loading-container">
+                <div class="loading-icon">📖</div>
+                <div class="loading-text">Loading "Multiple Choice"...</div>
+                <div class="loading-subtext">
+                    Initializing EPUB reader and loading the experimental novel by Alejandro Zambra. 
+                    This innovative work uses the format of a Chilean university entrance exam to explore 
+                    themes of memory, identity, and social critique.
+                </div>
+            </div>
+            
+            <div id="errorContainer" class="error-container">
+                <div class="error-icon">📚❌</div>
+                <div class="error-title">Unable to Load EPUB</div>
+                <div class="error-message" id="errorMessage">
+                    There was a problem loading the EPUB file. This might be due to:
+                    <br>• Network connectivity issues
+                    <br>• CORS restrictions 
+                    <br>• File access permissions
+                </div>
+                <button class="retry-button" onclick="retryLoading()">Try Again</button>
+            </div>
+            
+            <div id="viewer"></div>
+            
+            <div id="controls" class="controls">
+                <button class="control-btn" id="prevBtn" onclick="goToPrevious()">
+                    ← Previous
+                </button>
+                <button class="control-btn" id="nextBtn" onclick="goToNext()">
+                    Next →
+                </button>
+            </div>
+        </div>
+        
+        <div class="info-section">
+            <h2>About This Reading</h2>
+            <div class="info-grid">
+                <div class="info-card">
+                    <h3>📖 The Novel</h3>
+                    <p><strong>Multiple Choice</strong> by Alejandro Zambra is an experimental novel that mimics the format of the Chilean university entrance exam. Through this innovative structure, Zambra explores memory, family relationships, and Chilean society during and after the Pinochet dictatorship.</p>
+                </div>
+                
+                <div class="info-card">
+                    <h3>🎯 For CWI Course</h3>
+                    <p>This text connects directly to our course themes of <strong>communication, writing, and identity</strong>. Pay attention to how Zambra uses institutional forms (the standardized test) to critique educational systems and explore how structures shape individual expression.</p>
+                </div>
+                
+                <div class="info-card">
+                    <h3>💭 Discussion Questions</h3>
+                    <p>As you read, consider: How does the test format serve the novel's themes? What critique of education emerges? How does individual experience reflect broader social and political forces? How does form become content?</p>
+                </div>
+                
+                <div class="info-card">
+                    <h3>📱 How to Read</h3>
+                    <p>Use the navigation buttons or arrow keys to move between sections. The book is divided into five parts, each corresponding to different types of test questions. Take your time with each section and consider the interplay between form and meaning.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Include epub.js from CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/epubjs/dist/epub.min.js"></script>
+    
+    <script>
+        let book = null;
+        let rendition = null;
+        let currentLocation = null;
+        
+        // Status management
+        function updateStatus(status, message) {
+            const indicator = document.getElementById('statusIndicator');
+            indicator.className = `status-indicator status-${status}`;
+            indicator.textContent = message;
+        }
+        
+        // Error handling
+        function showError(message) {
+            document.getElementById('loadingContainer').style.display = 'none';
+            document.getElementById('errorContainer').style.display = 'flex';
+            document.getElementById('errorMessage').innerHTML = message;
+            updateStatus('error', 'Failed to Load');
+        }
+        
+        // Retry loading
+        function retryLoading() {
+            document.getElementById('errorContainer').style.display = 'none';
+            document.getElementById('loadingContainer').style.display = 'flex';
+            updateStatus('loading', 'Retrying...');
+            initializeReader();
+        }
+        
+        // Navigation functions
+        function goToPrevious() {
+            if (rendition) {
+                rendition.prev();
+            }
+        }
+        
+        function goToNext() {
+            if (rendition) {
+                rendition.next();
+            }
+        }
+        
+        // Main initialization function
+        function initializeReader() {
+            try {
+                console.log('Starting EPUB initialization...');
+                
+                // Try multiple possible URLs for the EPUB file
+                const possibleUrls = [
+                    './MultipleChoiceZambra.epub',
+                    './book.epub',
+                    'MultipleChoiceZambra.epub',
+                    'book.epub'
+                ];
+                
+                // Try each URL until one works
+                loadEpubFromUrls(possibleUrls);
+                
+            } catch (error) {
+                console.error('Initialization error:', error);
+                showError(`Failed to initialize EPUB reader: ${error.message}`);
+            }
+        }
+        
+        async function loadEpubFromUrls(urls) {
+            for (const url of urls) {
+                try {
+                    console.log(`Trying to load EPUB from: ${url}`);
+                    updateStatus('loading', `Loading from ${url}...`);
+                    
+                    // Test if the URL is accessible
+                    const response = await fetch(url, { method: 'HEAD' });
+                    if (!response.ok) {
+                        console.warn(`URL ${url} returned ${response.status}`);
+                        continue;
+                    }
+                    
+                    // Try to load the EPUB
+                    book = ePub(url);
+                    
+                    // Wait for the book to be ready
+                    await book.ready;
+                    console.log('Book loaded successfully');
+                    
+                    // Setup rendition
+                    rendition = book.renderTo("viewer", {
+                        width: "100%",
+                        height: "600px",
+                        spread: "none"
+                    });
+                    
+                    // Display the book
+                    await rendition.display();
+                    
+                    // Hide loading, show controls
+                    document.getElementById('loadingContainer').style.display = 'none';
+                    document.getElementById('controls').style.display = 'flex';
+                    updateStatus('ready', 'Ready to Read');
+                    
+                    // Setup navigation
+                    rendition.on("relocated", (location) => {
+                        currentLocation = location;
+                        updateNavigation();
+                    });
+                    
+                    // Add keyboard support
+                    document.addEventListener('keydown', (e) => {
+                        if (e.key === 'ArrowLeft') {
+                            e.preventDefault();
+                            goToPrevious();
+                        } else if (e.key === 'ArrowRight') {
+                            e.preventDefault();
+                            goToNext();
+                        }
+                    });
+                    
+                    console.log('EPUB reader fully initialized');
+                    return; // Success! Exit the function
+                    
+                } catch (error) {
+                    console.warn(`Failed to load from ${url}:`, error);
+                    continue; // Try next URL
+                }
+            }
+            
+            // If we get here, all URLs failed
+            showError(`
+                Unable to load the EPUB file. Please ensure that:<br>
+                • The file "MultipleChoiceZambra.epub" or "book.epub" exists in the repository<br>
+                • GitHub Pages is properly enabled<br>
+                • The file is accessible via direct URL<br><br>
+                <strong>Expected URLs:</strong><br>
+                ${urls.map(url => `• ${window.location.origin}${window.location.pathname}${url}`).join('<br>')}
+            `);
+        }
+        
+        function updateNavigation() {
+            // This function can be enhanced to show chapter titles, progress, etc.
+            if (currentLocation) {
+                console.log('Current location:', currentLocation);
+            }
+        }
+        
+        // Initialize when page loads
+        window.addEventListener('load', () => {
+            setTimeout(initializeReader, 500); // Small delay for better UX
+        });
+        
+        // Handle errors globally
+        window.addEventListener('error', (e) => {
+            console.error('Global error:', e);
+            showError(`An error occurred: ${e.message}`);
+        });
+    </script>
+</body>
+</html>
